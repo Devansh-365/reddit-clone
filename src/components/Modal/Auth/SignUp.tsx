@@ -2,8 +2,18 @@ import { Input, Button, Flex, Text } from '@chakra-ui/react';
 import React, { useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { authModalState } from '../../../atoms/authModalAtoms';
+import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth'
+import { auth } from '../../../firebase/clientApp';
+import {FIREBASE_ERRORS} from '../../../firebase/error';
 
 const SignUp:React.FC = () => {
+
+    const [
+        createUserWithEmailAndPassword,
+        user,
+        loading,
+        userError,
+      ] = useCreateUserWithEmailAndPassword(auth);
     
     const [signupForm, setSignupForm] = useState({
         email: '',
@@ -11,9 +21,21 @@ const SignUp:React.FC = () => {
         confirmPassword: '',
     })
 
+    const [errror, setError] = useState('')
+
     const setAuthModalState = useSetRecoilState(authModalState)
 
-    const onSubmit = () => {}
+    const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+
+        if(errror) setError('')
+        if(signupForm.password !== signupForm.confirmPassword) {
+            setError('Passwords do not match')
+            return
+        }
+
+        createUserWithEmailAndPassword(signupForm.email, signupForm.password)
+    }
     const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSignupForm((prev) => ({
             ...prev,
@@ -85,8 +107,13 @@ const SignUp:React.FC = () => {
                 border: '1px solid',
                 borderColor: 'blue.500',
             }}
-            bg='gray.50' />
-            <Button type='submit' width='100%' height='36px' mt={2} mb={2} >
+            bg='gray.50' /> 
+            { (errror || userError) && (
+                <Text textAlign='center' color='red' fontSize='10pt'>
+                {errror || FIREBASE_ERRORS[userError?.message as keyof typeof FIREBASE_ERRORS]}
+                </Text>
+            )}
+            <Button type='submit' width='100%' height='36px' mt={2} mb={2} isLoading={loading}>
                 Sign Up
             </Button>
             <Flex fontSize='9pt' justifyContent='center' >
